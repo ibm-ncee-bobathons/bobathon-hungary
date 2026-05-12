@@ -1,11 +1,11 @@
 # Repository Structure
 
-Visual overview of the IBM Bobathon Amsterdam Labs repository organization.
+Visual overview of the IBM Bobathon Hungary Labs repository organization.
 
 ## Directory Tree
 
 ```
-bobathon-amsterdam-labs/
+bobathon-hungary/
 ├── README.md                          # Main repository overview
 ├── .gitignore                         # Git ignore rules
 ├── REPOSITORY-STRUCTURE.md            # This file
