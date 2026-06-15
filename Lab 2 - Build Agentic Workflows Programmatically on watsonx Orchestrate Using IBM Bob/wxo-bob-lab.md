@@ -119,28 +119,6 @@ To configure access, complete the following steps:
 
 ![Bob IDE showing MCP server configuration in mcp.json file](images/04-mcp-json-config.png)
 
-### Bob Marketplace Approach (Optional)
-
-Alternatively, complete the following steps to configure Bob to access the watsonx Orchestrate MCP servers:
-
-1. In the right pane, click **... > MCP Servers**.
-
-2. Search for **watsonx Orchestrate**.
-
-3. Click **Install** on **watsonx Orchestrate ADK Docs**. Choose the installation scope (current project or global), then click **Install**.
-
-   > **Important:** Make sure Python and uv are installed in your system before you continue.
-
-4. Click **Install** on **watsonx Orchestrate ADK**.
-   - Set the installation scope to **Project**.
-   - Set the installation method to **Latest ADK Version**.
-   - Enter the absolute path of your project directory in **Current Project Working Directory**.
-   - Click **Install**.
-
-5. Both MCP servers must now be marked as healthy. Close the Settings page to continue.
-
----
-
 ## Step 2 – Install the watsonx Orchestrate ADK Extension
 
 > **Note:** If you have already completed the [env setup instructions.pdf](env%20setup%20instructions%20.pdf) guide, you can **skip this step** as the ADK extension is already installed and configured.
