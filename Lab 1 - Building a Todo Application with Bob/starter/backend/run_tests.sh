@@ -1,20 +1,38 @@
-#!/bin/bash
-# Script to run tests with coverage report
+#!/usr/bin/env bash
+# run_tests.sh
+# Run the test suite with coverage reporting.
+# Usage: bash run_tests.sh
 
-echo "Running unit tests with coverage..."
-echo "=================================="
+set -euo pipefail
 
-# Run tests with coverage
-python -m pytest test_app.py -v --cov=app --cov=models --cov=database --cov-report=term-missing --cov-report=html
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+echo "========================================"
+echo " Todo App — Backend Test Runner"
+echo "========================================"
+
+# Install dependencies (skip if already satisfied)
+echo ""
+echo "→ Installing dependencies..."
+pip3 install -q -r requirements.txt
+
+# Install test dependencies
+echo "→ Installing test dependencies..."
+pip3 install -q pytest pytest-cov
 
 echo ""
-echo "=================================="
-echo "Coverage report generated!"
-echo "View detailed HTML report: htmlcov/index.html"
+echo "→ Running tests with coverage..."
 echo ""
-echo "To view the HTML report, run:"
-echo "  open htmlcov/index.html  (macOS)"
-echo "  start htmlcov/index.html (Windows)"
-echo "  xdg-open htmlcov/index.html (Linux)"
 
-# Made with Bob
+python3 -m pytest test_app.py \
+    -v \
+    --tb=short \
+    --cov=app \
+    --cov=models \
+    --cov=database \
+    --cov-report=term-missing \
+    --cov-fail-under=90
+
+echo ""
+echo "✅ All tests passed with ≥ 90% coverage!"

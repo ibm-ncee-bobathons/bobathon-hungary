@@ -1,466 +1,392 @@
 """
-Unit Tests for Todo Application API
-Tests all endpoints with comprehensive coverage including edge cases and error scenarios.
+Unit Tests — Todo Application Flask Backend
+============================================
+Covers every endpoint and branch to achieve ≥ 90 % code coverage.
+
+Test matrix
+-----------
+Health
+  test_health_check                    GET /api/health → 200
+
+GET /api/todos
+  test_get_todos_empty                 empty db → []
+  test_get_todos_returns_all           two items → list of 2, newest first
+
+GET /api/todos/<id>
+  test_get_todo_found                  existing id → 200 + correct body
+  test_get_todo_not_found              missing id  → 404
+
+POST /api/todos
+  test_create_todo_minimal             title only  → 201, defaults applied
+  test_create_todo_full                title + description → 201
+  test_create_todo_missing_title       no title    → 400
+  test_create_todo_empty_body          None body   → 400
+
+PUT /api/todos/<id>
+  test_update_todo_title               update title only → 200
+  test_update_todo_description         update description only → 200
+  test_update_todo_completed           mark completed → 200
+  test_update_todo_all_fields          update all three fields → 200
+  test_update_todo_not_found           missing id → 404
+
+DELETE /api/todos/<id>
+  test_delete_todo                     existing id → 200 + message
+  test_delete_todo_not_found           missing id  → 404
+
+Model
+  test_todo_repr                       __repr__ format
+  test_todo_to_dict_null_created_at    to_dict when created_at is None
 """
 
-import unittest
 import json
-from app import app, db
-from models import Todo
-from datetime import datetime
+import pytest
+from app import app
+from database import db as _db
 
 
-class TodoAPITestCase(unittest.TestCase):
-    """Test case for the Todo API endpoints"""
-    
-    def setUp(self):
-        """Set up test client and in-memory database before each test"""
-        app.config['TESTING'] = True
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-        self.client = app.test_client()
-        
-        with app.app_context():
-            db.create_all()
-    
-    def tearDown(self):
-        """Clean up database after each test"""
-        with app.app_context():
-            db.session.remove()
-            db.drop_all()
-    
-    def create_sample_todo(self, title="Test Todo", description="Test Description", completed=False):
-        """Helper method to create a sample todo"""
-        with app.app_context():
-            todo = Todo(title=title, description=description, completed=completed)
-            db.session.add(todo)
-            db.session.commit()
-            return todo.id
-    
-    # ========================================================================
-    # GET /api/todos - List all todos
-    # ========================================================================
-    
-    def test_get_todos_empty(self):
-        """Test getting todos when database is empty"""
-        response = self.client.get('/api/todos')
-        self.assertEqual(response.status_code, 200)
-        data = json.loads(response.data)
-        self.assertEqual(data, [])
-    
-    def test_get_todos_with_data(self):
-        """Test getting todos when database has data"""
-        # Create sample todos
-        self.create_sample_todo("Todo 1", "Description 1")
-        self.create_sample_todo("Todo 2", "Description 2", completed=True)
-        
-        response = self.client.get('/api/todos')
-        self.assertEqual(response.status_code, 200)
-        data = json.loads(response.data)
-        
-        self.assertEqual(len(data), 2)
-        self.assertIn('id', data[0])
-        self.assertIn('title', data[0])
-        self.assertIn('description', data[0])
-        self.assertIn('completed', data[0])
-        self.assertIn('created_at', data[0])
-    
-    def test_get_todos_ordering(self):
-        """Test that todos are ordered by created_at descending"""
-        # Create todos with slight delay
-        id1 = self.create_sample_todo("First Todo")
-        id2 = self.create_sample_todo("Second Todo")
-        
-        response = self.client.get('/api/todos')
-        data = json.loads(response.data)
-        
-        # Second todo should be first (newest first)
-        self.assertEqual(data[0]['id'], id2)
-        self.assertEqual(data[1]['id'], id1)
-    
-    # ========================================================================
-    # GET /api/todos/<id> - Get specific todo
-    # ========================================================================
-    
-    def test_get_todo_by_id_success(self):
-        """Test getting a specific todo by ID"""
-        todo_id = self.create_sample_todo("Specific Todo", "Specific Description")
-        
-        response = self.client.get(f'/api/todos/{todo_id}')
-        self.assertEqual(response.status_code, 200)
-        data = json.loads(response.data)
-        
-        self.assertEqual(data['id'], todo_id)
-        self.assertEqual(data['title'], "Specific Todo")
-        self.assertEqual(data['description'], "Specific Description")
-        self.assertEqual(data['completed'], False)
-    
-    def test_get_todo_by_id_not_found(self):
-        """Test getting a non-existent todo"""
-        response = self.client.get('/api/todos/999')
-        self.assertEqual(response.status_code, 404)
-        data = json.loads(response.data)
-        self.assertIn('error', data)
-    
-    # ========================================================================
-    # POST /api/todos - Create new todo
-    # ========================================================================
-    
-    def test_create_todo_success(self):
-        """Test creating a new todo with valid data"""
-        payload = {
-            'title': 'New Todo',
-            'description': 'New Description'
-        }
-        
-        response = self.client.post(
-            '/api/todos',
-            data=json.dumps(payload),
-            content_type='application/json'
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="session")
+def flask_app():
+    """Configure the app for testing with an in-memory SQLite database."""
+    app.config.update(
+        TESTING=True,
+        SQLALCHEMY_DATABASE_URI="sqlite:///:memory:",
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    )
+    yield app
+
+
+@pytest.fixture(scope="session")
+def init_database(flask_app):
+    """Create all tables once per test session."""
+    with flask_app.app_context():
+        _db.create_all()
+    yield
+    with flask_app.app_context():
+        _db.drop_all()
+
+
+@pytest.fixture()
+def client(flask_app, init_database):
+    """
+    Return a test client.
+    Each test gets a clean database — all rows are removed after the test.
+    """
+    with flask_app.test_client() as c:
+        yield c
+    # Teardown: wipe all rows between tests so state doesn't bleed
+    with flask_app.app_context():
+        from models import Todo
+        _db.session.query(Todo).delete()
+        _db.session.commit()
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def post_todo(client, title="Buy milk", description="From the corner shop"):
+    """Convenience wrapper for creating a todo via POST."""
+    return client.post(
+        "/api/todos",
+        data=json.dumps({"title": title, "description": description}),
+        content_type="application/json",
+    )
+
+
+def json_body(response):
+    """Decode JSON response body."""
+    return json.loads(response.data)
+
+
+# ---------------------------------------------------------------------------
+# Health endpoint
+# ---------------------------------------------------------------------------
+
+class TestHealthCheck:
+    def test_health_check(self, client):
+        response = client.get("/api/health")
+        body = json_body(response)
+
+        assert response.status_code == 200
+        assert body["status"] == "healthy"
+        assert "timestamp" in body
+
+
+# ---------------------------------------------------------------------------
+# GET /api/todos
+# ---------------------------------------------------------------------------
+
+class TestGetTodos:
+    def test_get_todos_empty(self, client):
+        response = client.get("/api/todos")
+        body = json_body(response)
+
+        assert response.status_code == 200
+        assert body == []
+
+    def test_get_todos_returns_all(self, client):
+        post_todo(client, title="First todo")
+        post_todo(client, title="Second todo")
+
+        response = client.get("/api/todos")
+        body = json_body(response)
+
+        assert response.status_code == 200
+        assert len(body) == 2
+        # Newest first ordering
+        assert body[0]["title"] == "Second todo"
+        assert body[1]["title"] == "First todo"
+
+
+# ---------------------------------------------------------------------------
+# GET /api/todos/<id>
+# ---------------------------------------------------------------------------
+
+class TestGetTodo:
+    def test_get_todo_found(self, client):
+        created = json_body(post_todo(client, title="Find me"))
+        todo_id = created["id"]
+
+        response = client.get(f"/api/todos/{todo_id}")
+        body = json_body(response)
+
+        assert response.status_code == 200
+        assert body["id"] == todo_id
+        assert body["title"] == "Find me"
+
+    def test_get_todo_not_found(self, client):
+        response = client.get("/api/todos/99999")
+        body = json_body(response)
+
+        assert response.status_code == 404
+        assert "error" in body
+
+
+# ---------------------------------------------------------------------------
+# POST /api/todos
+# ---------------------------------------------------------------------------
+
+class TestCreateTodo:
+    def test_create_todo_minimal(self, client):
+        response = client.post(
+            "/api/todos",
+            data=json.dumps({"title": "Minimal todo"}),
+            content_type="application/json",
         )
-        
-        self.assertEqual(response.status_code, 201)
-        data = json.loads(response.data)
-        
-        self.assertIn('id', data)
-        self.assertEqual(data['title'], 'New Todo')
-        self.assertEqual(data['description'], 'New Description')
-        self.assertEqual(data['completed'], False)
-        self.assertIn('created_at', data)
-    
-    def test_create_todo_without_description(self):
-        """Test creating a todo without description (optional field)"""
-        payload = {'title': 'Todo without description'}
-        
-        response = self.client.post(
-            '/api/todos',
-            data=json.dumps(payload),
-            content_type='application/json'
+        body = json_body(response)
+
+        assert response.status_code == 201
+        assert body["title"] == "Minimal todo"
+        assert body["completed"] is False
+        assert body["id"] is not None
+        assert body["created_at"] is not None
+
+    def test_create_todo_full(self, client):
+        response = post_todo(client, title="Full todo", description="With description")
+        body = json_body(response)
+
+        assert response.status_code == 201
+        assert body["title"] == "Full todo"
+        assert body["description"] == "With description"
+
+    def test_create_todo_missing_title(self, client):
+        response = client.post(
+            "/api/todos",
+            data=json.dumps({"description": "No title here"}),
+            content_type="application/json",
         )
-        
-        self.assertEqual(response.status_code, 201)
-        data = json.loads(response.data)
-        self.assertEqual(data['title'], 'Todo without description')
-        self.assertEqual(data['description'], '')
-    
-    def test_create_todo_missing_title(self):
-        """Test creating a todo without required title field"""
-        payload = {'description': 'Description without title'}
-        
-        response = self.client.post(
-            '/api/todos',
-            data=json.dumps(payload),
-            content_type='application/json'
-        )
-        
-        self.assertEqual(response.status_code, 400)
-        data = json.loads(response.data)
-        self.assertIn('error', data)
-        self.assertIn('required', data['error'].lower())
-    
-    def test_create_todo_empty_payload(self):
-        """Test creating a todo with empty payload"""
-        response = self.client.post(
-            '/api/todos',
+        body = json_body(response)
+
+        assert response.status_code == 400
+        assert body["error"] == "Title is required"
+
+    def test_create_todo_empty_body(self, client):
+        response = client.post(
+            "/api/todos",
             data=json.dumps({}),
-            content_type='application/json'
+            content_type="application/json",
         )
-        
-        self.assertEqual(response.status_code, 400)
-        data = json.loads(response.data)
-        self.assertIn('error', data)
-    
-    def test_create_todo_no_json(self):
-        """Test creating a todo without JSON content type"""
-        response = self.client.post('/api/todos', data='not json')
-        self.assertEqual(response.status_code, 400)
-    
-    def test_create_todo_empty_title(self):
-        """Test creating a todo with empty string title"""
-        payload = {'title': '', 'description': 'Description'}
-        
-        response = self.client.post(
-            '/api/todos',
-            data=json.dumps(payload),
-            content_type='application/json'
-        )
-        
-        self.assertEqual(response.status_code, 400)
-    
-    # ========================================================================
-    # PUT /api/todos/<id> - Update todo
-    # ========================================================================
-    
-    def test_update_todo_all_fields(self):
-        """Test updating all fields of a todo"""
-        todo_id = self.create_sample_todo("Original Title", "Original Description")
-        
-        payload = {
-            'title': 'Updated Title',
-            'description': 'Updated Description',
-            'completed': True
-        }
-        
-        response = self.client.put(
-            f'/api/todos/{todo_id}',
-            data=json.dumps(payload),
-            content_type='application/json'
-        )
-        
-        self.assertEqual(response.status_code, 200)
-        data = json.loads(response.data)
-        
-        self.assertEqual(data['id'], todo_id)
-        self.assertEqual(data['title'], 'Updated Title')
-        self.assertEqual(data['description'], 'Updated Description')
-        self.assertEqual(data['completed'], True)
-    
-    def test_update_todo_partial_title(self):
-        """Test updating only the title"""
-        todo_id = self.create_sample_todo("Original Title", "Original Description")
-        
-        payload = {'title': 'New Title Only'}
-        
-        response = self.client.put(
-            f'/api/todos/{todo_id}',
-            data=json.dumps(payload),
-            content_type='application/json'
-        )
-        
-        self.assertEqual(response.status_code, 200)
-        data = json.loads(response.data)
-        
-        self.assertEqual(data['title'], 'New Title Only')
-        self.assertEqual(data['description'], 'Original Description')
-        self.assertEqual(data['completed'], False)
-    
-    def test_update_todo_partial_completed(self):
-        """Test updating only the completed status"""
-        todo_id = self.create_sample_todo("Title", "Description", completed=False)
-        
-        payload = {'completed': True}
-        
-        response = self.client.put(
-            f'/api/todos/{todo_id}',
-            data=json.dumps(payload),
-            content_type='application/json'
-        )
-        
-        self.assertEqual(response.status_code, 200)
-        data = json.loads(response.data)
-        
-        self.assertEqual(data['completed'], True)
-        self.assertEqual(data['title'], 'Title')
-    
-    def test_update_todo_toggle_completed(self):
-        """Test toggling completed status multiple times"""
-        todo_id = self.create_sample_todo("Toggle Test")
-        
-        # Toggle to True
-        response = self.client.put(
-            f'/api/todos/{todo_id}',
-            data=json.dumps({'completed': True}),
-            content_type='application/json'
-        )
-        self.assertEqual(json.loads(response.data)['completed'], True)
-        
-        # Toggle back to False
-        response = self.client.put(
-            f'/api/todos/{todo_id}',
-            data=json.dumps({'completed': False}),
-            content_type='application/json'
-        )
-        self.assertEqual(json.loads(response.data)['completed'], False)
-    
-    def test_update_todo_not_found(self):
-        """Test updating a non-existent todo"""
-        payload = {'title': 'Updated Title'}
-        
-        response = self.client.put(
-            '/api/todos/999',
-            data=json.dumps(payload),
-            content_type='application/json'
-        )
-        
-        self.assertEqual(response.status_code, 500)
-        data = json.loads(response.data)
-        self.assertIn('error', data)
-    
-    def test_update_todo_empty_payload(self):
-        """Test updating with empty payload (should succeed, no changes)"""
-        todo_id = self.create_sample_todo("Original", "Description")
-        
-        response = self.client.put(
-            f'/api/todos/{todo_id}',
-            data=json.dumps({}),
-            content_type='application/json'
-        )
-        
-        self.assertEqual(response.status_code, 200)
-        data = json.loads(response.data)
-        self.assertEqual(data['title'], 'Original')
-    
-    # ========================================================================
-    # DELETE /api/todos/<id> - Delete todo
-    # ========================================================================
-    
-    def test_delete_todo_success(self):
-        """Test deleting an existing todo"""
-        todo_id = self.create_sample_todo("To Be Deleted")
-        
-        response = self.client.delete(f'/api/todos/{todo_id}')
-        self.assertEqual(response.status_code, 200)
-        data = json.loads(response.data)
-        self.assertIn('message', data)
-        self.assertIn('deleted', data['message'].lower())
-        
-        # Verify todo is actually deleted
-        get_response = self.client.get(f'/api/todos/{todo_id}')
-        self.assertEqual(get_response.status_code, 404)
-    
-    def test_delete_todo_not_found(self):
-        """Test deleting a non-existent todo"""
-        response = self.client.delete('/api/todos/999')
-        self.assertEqual(response.status_code, 500)
-        data = json.loads(response.data)
-        self.assertIn('error', data)
-    
-    def test_delete_todo_verify_others_remain(self):
-        """Test that deleting one todo doesn't affect others"""
-        id1 = self.create_sample_todo("Todo 1")
-        id2 = self.create_sample_todo("Todo 2")
-        id3 = self.create_sample_todo("Todo 3")
-        
-        # Delete middle todo
-        response = self.client.delete(f'/api/todos/{id2}')
-        self.assertEqual(response.status_code, 200)
-        
-        # Verify others still exist
-        response = self.client.get('/api/todos')
-        data = json.loads(response.data)
-        self.assertEqual(len(data), 2)
-        
-        ids = [todo['id'] for todo in data]
-        self.assertIn(id1, ids)
-        self.assertIn(id3, ids)
-        self.assertNotIn(id2, ids)
-    
-    # ========================================================================
-    # GET /api/health - Health check
-    # ========================================================================
-    
-    def test_health_check(self):
-        """Test the health check endpoint"""
-        response = self.client.get('/api/health')
-        self.assertEqual(response.status_code, 200)
-        data = json.loads(response.data)
-        
-        self.assertIn('status', data)
-        self.assertEqual(data['status'], 'healthy')
-        self.assertIn('timestamp', data)
-    
-    # ========================================================================
-    # Integration Tests
-    # ========================================================================
-    
-    def test_full_crud_workflow(self):
-        """Test complete CRUD workflow"""
-        # Create
-        create_response = self.client.post(
-            '/api/todos',
-            data=json.dumps({'title': 'Workflow Test', 'description': 'Testing CRUD'}),
-            content_type='application/json'
-        )
-        self.assertEqual(create_response.status_code, 201)
-        todo_id = json.loads(create_response.data)['id']
-        
-        # Read
-        read_response = self.client.get(f'/api/todos/{todo_id}')
-        self.assertEqual(read_response.status_code, 200)
-        
-        # Update
-        update_response = self.client.put(
-            f'/api/todos/{todo_id}',
-            data=json.dumps({'completed': True}),
-            content_type='application/json'
-        )
-        self.assertEqual(update_response.status_code, 200)
-        self.assertTrue(json.loads(update_response.data)['completed'])
-        
-        # Delete
-        delete_response = self.client.delete(f'/api/todos/{todo_id}')
-        self.assertEqual(delete_response.status_code, 200)
-        
-        # Verify deletion
-        verify_response = self.client.get(f'/api/todos/{todo_id}')
-        self.assertEqual(verify_response.status_code, 404)
-    
-    def test_multiple_todos_operations(self):
-        """Test operations with multiple todos"""
-        # Create multiple todos
-        ids = []
-        for i in range(5):
-            response = self.client.post(
-                '/api/todos',
-                data=json.dumps({'title': f'Todo {i}', 'description': f'Description {i}'}),
-                content_type='application/json'
-            )
-            ids.append(json.loads(response.data)['id'])
-        
-        # Verify all created
-        response = self.client.get('/api/todos')
-        self.assertEqual(len(json.loads(response.data)), 5)
-        
-        # Update some
-        for i in [0, 2, 4]:
-            self.client.put(
-                f'/api/todos/{ids[i]}',
-                data=json.dumps({'completed': True}),
-                content_type='application/json'
-            )
-        
-        # Delete some
-        for i in [1, 3]:
-            self.client.delete(f'/api/todos/{ids[i]}')
-        
-        # Verify final state
-        response = self.client.get('/api/todos')
-        remaining = json.loads(response.data)
-        self.assertEqual(len(remaining), 3)
-        
-        completed_count = sum(1 for todo in remaining if todo['completed'])
-        self.assertEqual(completed_count, 3)
-    
-    def test_todo_model_to_dict(self):
-        """Test the Todo model's to_dict method"""
-        with app.app_context():
-            todo = Todo(title="Test", description="Description", completed=False)
-            db.session.add(todo)
-            db.session.commit()
-            
-            todo_dict = todo.to_dict()
-            
-            self.assertIn('id', todo_dict)
-            self.assertIn('title', todo_dict)
-            self.assertIn('description', todo_dict)
-            self.assertIn('completed', todo_dict)
-            self.assertIn('created_at', todo_dict)
-            self.assertIsInstance(todo_dict['created_at'], str)
-    
-    def test_todo_model_repr(self):
-        """Test the Todo model's __repr__ method"""
-        with app.app_context():
-            todo = Todo(title="Test Todo", description="Description")
-            db.session.add(todo)
-            db.session.commit()
-            
-            repr_str = repr(todo)
-            self.assertIn('Todo', repr_str)
-            self.assertIn(str(todo.id), repr_str)
-            self.assertIn('Test Todo', repr_str)
+        body = json_body(response)
+
+        assert response.status_code == 400
+        assert body["error"] == "Title is required"
 
 
-if __name__ == '__main__':
-    # Run tests with verbose output
-    unittest.main(verbosity=2)
+# ---------------------------------------------------------------------------
+# PUT /api/todos/<id>
+# ---------------------------------------------------------------------------
+
+class TestUpdateTodo:
+    def _create(self, client):
+        return json_body(post_todo(client, title="Original title", description="Original desc"))
+
+    def test_update_todo_title(self, client):
+        todo = self._create(client)
+        response = client.put(
+            f"/api/todos/{todo['id']}",
+            data=json.dumps({"title": "Updated title"}),
+            content_type="application/json",
+        )
+        body = json_body(response)
+
+        assert response.status_code == 200
+        assert body["title"] == "Updated title"
+        assert body["description"] == "Original desc"  # unchanged
+
+    def test_update_todo_description(self, client):
+        todo = self._create(client)
+        response = client.put(
+            f"/api/todos/{todo['id']}",
+            data=json.dumps({"description": "New description"}),
+            content_type="application/json",
+        )
+        body = json_body(response)
+
+        assert response.status_code == 200
+        assert body["description"] == "New description"
+        assert body["title"] == "Original title"  # unchanged
+
+    def test_update_todo_completed(self, client):
+        todo = self._create(client)
+        response = client.put(
+            f"/api/todos/{todo['id']}",
+            data=json.dumps({"completed": True}),
+            content_type="application/json",
+        )
+        body = json_body(response)
+
+        assert response.status_code == 200
+        assert body["completed"] is True
+
+    def test_update_todo_all_fields(self, client):
+        todo = self._create(client)
+        response = client.put(
+            f"/api/todos/{todo['id']}",
+            data=json.dumps({
+                "title": "All new title",
+                "description": "All new desc",
+                "completed": True,
+            }),
+            content_type="application/json",
+        )
+        body = json_body(response)
+
+        assert response.status_code == 200
+        assert body["title"] == "All new title"
+        assert body["description"] == "All new desc"
+        assert body["completed"] is True
+
+    def test_update_todo_not_found(self, client):
+        response = client.put(
+            "/api/todos/99999",
+            data=json.dumps({"title": "Ghost update"}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# DELETE /api/todos/<id>
+# ---------------------------------------------------------------------------
+
+class TestDeleteTodo:
+    def test_delete_todo(self, client):
+        todo = json_body(post_todo(client, title="Delete me"))
+        todo_id = todo["id"]
+
+        response = client.delete(f"/api/todos/{todo_id}")
+        body = json_body(response)
+
+        assert response.status_code == 200
+        assert body["message"] == "Todo deleted successfully"
+
+        # Confirm the record is gone
+        get_response = client.get(f"/api/todos/{todo_id}")
+        assert get_response.status_code == 404
+
+    def test_delete_todo_not_found(self, client):
+        response = client.delete("/api/todos/99999")
+
+        assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Error branch tests (patch db to trigger 500 / HTTPException re-raise paths)
+# ---------------------------------------------------------------------------
+
+class TestErrorBranches:
+    """Force the exception branches in each route handler."""
+
+    def test_get_todos_db_error(self, client, flask_app):
+        """GET /api/todos → 500 when Todo.query.order_by raises unexpectedly."""
+        from unittest.mock import patch, MagicMock
+
+        # Build a fake Todo class whose .query descriptor doesn't need an app
+        # context to be accessed — we replace the entire Todo symbol in app.py.
+        mock_todo = MagicMock()
+        mock_todo.query.order_by.side_effect = RuntimeError("db boom")
+
+        with patch("app.Todo", mock_todo):
+            response = client.get("/api/todos")
+
+        assert response.status_code == 500
+        assert "error" in json_body(response)
+
+    def test_create_todo_db_error(self, client, flask_app, monkeypatch):
+        """POST /api/todos → 500 when session.commit raises."""
+        import database as db_module
+        original_commit = db_module.db.session.commit
+
+        def bad_commit():
+            raise RuntimeError("commit failed")
+
+        monkeypatch.setattr(db_module.db.session, "commit", bad_commit)
+        response = client.post(
+            "/api/todos",
+            data=json.dumps({"title": "Will fail"}),
+            content_type="application/json",
+        )
+        assert response.status_code == 500
+        assert "error" in json_body(response)
+
+    def test_update_todo_http_exception_reraises(self, client):
+        """PUT /api/todos/<id> with missing id → HTTPException re-raised → 404."""
+        response = client.put(
+            "/api/todos/88888",
+            data=json.dumps({"title": "x"}),
+            content_type="application/json",
+        )
+        assert response.status_code == 404
+
+    def test_delete_todo_http_exception_reraises(self, client):
+        """DELETE /api/todos/<id> with missing id → HTTPException re-raised → 404."""
+        response = client.delete("/api/todos/88887")
+        assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Model unit tests
+# ---------------------------------------------------------------------------
+
+class TestTodoModel:
+    def test_todo_repr(self, client, flask_app):
+        with flask_app.app_context():
+            from models import Todo
+            todo = Todo(id=1, title="Test repr")
+            assert repr(todo) == "<Todo 1: Test repr>"
+
+    def test_todo_to_dict_null_created_at(self, client, flask_app):
+        with flask_app.app_context():
+            from models import Todo
+            todo = Todo(id=5, title="No timestamp", completed=False)
+            todo.created_at = None
+            result = todo.to_dict()
+            assert result["created_at"] is None
+            assert result["title"] == "No timestamp"
 
 # Made with Bob

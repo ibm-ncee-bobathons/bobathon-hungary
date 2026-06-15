@@ -1,85 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todo App - Bob Labs</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Todo App — Built with Bob</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>📝 Todo App</h1>
-            <p class="subtitle">Manage your tasks efficiently</p>
-        </header>
 
-        <main>
-            <!-- Add Todo Form -->
-            <section class="add-todo-section">
-                <div class="input-group">
-                    <input 
-                        type="text" 
-                        id="todoTitle" 
-                        placeholder="What needs to be done?" 
-                        maxlength="200"
-                        autocomplete="off"
-                    >
-                    <button id="addBtn" class="btn btn-primary">
-                        <span class="btn-icon">+</span>
-                        Add Todo
-                    </button>
-                </div>
-                <textarea 
-                    id="todoDescription" 
-                    placeholder="Add a description (optional)" 
-                    rows="2"
-                    maxlength="500"
-                ></textarea>
-            </section>
+  <div class="container">
 
-            <!-- Filter Buttons -->
-            <section class="filter-section">
-                <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="active">Active</button>
-                <button class="filter-btn" data-filter="completed">Completed</button>
-            </section>
+    <!-- ── Header ─────────────────────────────────── -->
+    <header>
+      <h1>📝 Todo Application</h1>
+      <p class="subtitle">Built with Bob AI Assistant</p>
+    </header>
 
-            <!-- Todo List -->
-            <section class="todo-list-section">
-                <div id="todoList" class="todo-list">
-                    <!-- Todos will be dynamically inserted here -->
-                </div>
-                <div id="emptyState" class="empty-state">
-                    <div class="empty-icon">📋</div>
-                    <p>No todos yet. Add one to get started!</p>
-                </div>
-            </section>
+    <main>
 
-            <!-- Stats -->
-            <section class="stats-section">
-                <div class="stat">
-                    <span class="stat-label">Total:</span>
-                    <span id="totalCount" class="stat-value">0</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Active:</span>
-                    <span id="activeCount" class="stat-value">0</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Completed:</span>
-                    <span id="completedCount" class="stat-value">0</span>
-                </div>
-            </section>
-        </main>
+      <!-- ── Add Todo Form ───────────────────────── -->
+      <section class="card add-section">
+        <h2>Add New Todo</h2>
 
-        <footer>
-            <p>Made with Bob AI 🤖</p>
-        </footer>
-    </div>
+        <form id="todo-form" novalidate>
+          <div class="form-group">
+            <label for="todo-title">Title <span class="required" aria-hidden="true">*</span></label>
+            <input
+              type="text"
+              id="todo-title"
+              name="title"
+              placeholder="What needs to be done?"
+              maxlength="200"
+              autocomplete="off"
+              required
+            />
+            <span class="field-error" id="title-error" role="alert" aria-live="polite"></span>
+          </div>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="toast"></div>
+          <div class="form-group">
+            <label for="todo-description">Description</label>
+            <textarea
+              id="todo-description"
+              name="description"
+              placeholder="Optional notes…"
+              rows="3"
+            ></textarea>
+          </div>
 
-    <script src="app.js"></script>
+          <button type="submit" class="btn btn-primary" id="submit-btn">
+            <span class="btn-icon" aria-hidden="true">➕</span>
+            Add Todo
+          </button>
+        </form>
+      </section>
+
+      <!-- ── Todo List ───────────────────────────── -->
+      <section class="card list-section">
+        <div class="list-header">
+          <h2>My Todos</h2>
+          <span class="badge" id="todo-count" aria-label="Todo count">0 todos</span>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="state-view loading-view" aria-live="polite">
+          <div class="spinner" role="status" aria-label="Loading"></div>
+          <p>Loading todos…</p>
+        </div>
+
+        <!-- Empty -->
+        <div id="empty-state" class="state-view empty-view" hidden>
+          <div class="state-icon" aria-hidden="true">📭</div>
+          <h3>No todos yet</h3>
+          <p>Add your first todo above to get started!</p>
+        </div>
+
+        <!-- Error -->
+        <div id="error-state" class="state-view error-view" hidden role="alert">
+          <div class="state-icon" aria-hidden="true">⚠️</div>
+          <h3>Something went wrong</h3>
+          <p id="error-message"></p>
+          <button onclick="location.reload()" class="btn btn-secondary">Retry</button>
+        </div>
+
+        <!-- List -->
+        <ul id="todos-list" class="todos-list" aria-label="Todo items"></ul>
+      </section>
+
+    </main>
+
+    <!-- ── Footer ─────────────────────────────────── -->
+    <footer>
+      <p>Created with ❤️ using Bob AI Assistant</p>
+    </footer>
+
+  </div><!-- /.container -->
+
+  <!-- Toast notification -->
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="app.js"></script>
 </body>
 </html>
