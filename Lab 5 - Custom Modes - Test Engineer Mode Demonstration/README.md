@@ -52,7 +52,7 @@ project/
 2. **Open in IBM Bob:**
    - Launch IBM Bob IDE
    - Navigate to **File → Open Folder**
-   - Select the `LAB01-modes_rules` directory
+   - Select the `Lab 5 - Custom Modes - Test Engineer Mode Demonstration` directory
    - This directory must be your root project folder in IBM Bob
    - Your workspace should now display the project structure with `src/` folder and `README.md` `requirements.txt` files.
 
@@ -94,7 +94,7 @@ The backend application is called `converter`, and its source code is located in
 
 **How to run the application** 
 
-- Open a terminal in the IBM Bob IDE. Your current directory should be `LAB01-modes_rules`.
+- Open a terminal in the IBM Bob IDE. Your current directory should be `Lab 5 - Custom Modes - Test Engineer Mode Demonstration`.
 - Run `python -m venv .venv` - this creates a `.venv` directory in your project. It will serve as your local Python environment.
 - Activate the virtual environment by running `source .venv/bin/activate` - from now on, all Python packages will be installed in the `.venv` directory. (You can deactivate it later with the `deactivate` command.)
 - Now, inform the IBM Bob IDE (like in regular VSCode) to use new virtual environment by :
