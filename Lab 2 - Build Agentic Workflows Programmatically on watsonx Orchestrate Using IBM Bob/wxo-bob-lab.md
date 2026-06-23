@@ -73,7 +73,7 @@ The following figure created using Bob shows this architecture:
 
 ## Step 1 – Configure Access to watsonx Orchestrate MCP Servers
 
-> **Note:** If you have already completed the [env setup instructions.pdf](env%20setup%20instructions%20.pdf) guide, you can **skip this step** as your MCP servers are already configured.
+> **Note:** If you have already completed the [env_setup_instructions.md](env_setup_instructions.md) guide, you can **skip this step** as your MCP servers are already configured.
 
 Configure Bob to access the following watsonx Orchestrate MCP servers:
 
@@ -121,7 +121,7 @@ To configure access, complete the following steps:
 
 ## Step 2 – Install the watsonx Orchestrate ADK Extension
 
-> **Note:** If you have already completed the [env setup instructions.pdf](env%20setup%20instructions%20.pdf) guide, you can **skip this step** as the ADK extension is already installed and configured.
+> **Note:** If you have already completed the [env_setup_instructions.md](env_setup_instructions.md) guide, you can **skip this step** as the ADK extension is already installed and configured.
 
 Install the watsonx Orchestrate ADK extension that enables the development and deployment of agents and tools in Bob.
 
