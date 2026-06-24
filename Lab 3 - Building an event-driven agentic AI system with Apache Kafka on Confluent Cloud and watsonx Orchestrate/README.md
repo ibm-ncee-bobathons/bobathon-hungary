@@ -208,19 +208,18 @@ orchestrate toolkits add --kind mcp --name "sku-availability-checker" --descript
 ![Import MCP](images/Confluent_IMAGE_17.png)
 
 **
-In case of an ERROR like you see below, please copy the whole output to Bob. There might be a small issue like requirements.txt missing. Bob is trying to fix it for you.
+In case of an ERROR like you see below, please copy the whole output to Bob. There might be a small issue like requirements.txt missing. Bob is trying to fix it for you.**
 <img width="1512" height="890" alt="Screenshot 2026-06-24 at 7 13 04" src="https://github.com/user-attachments/assets/b919c41e-d4e2-4fea-995e-b5061f08bc7f" />
 
-Remove failed import 
+Only in case of ERROR: Remove failed import
 ```bash
 orchestrate toolkits remove --name "sku-availability-checker"
 ```
 
-Import the MCP server to watsonx Orchestrate with same command like before (don't forget to change path)
+Only in case of ERROR: Import the MCP server to watsonx Orchestrate with same command like before (don't forget to change path)
 ```bash
 orchestrate toolkits add --kind mcp --name "sku-availability-checker" --description "Real-time inventory availability checker using Confluent Kafka and ksqlDB" --language python --package-root "/Users/andrealongo/Desktop/git/Confluent_Bob_Lab/confluent-agents" --command "python3 mcp_server.py" --tools "*"
 ```
-**
 
 4. Open your Watsonx Orchestrate's environment in a browser. Now it's time to create a SKU_Availability_Agent which can leverage the MCP which we just imported to check the availability of products in a specific branch. 
 
