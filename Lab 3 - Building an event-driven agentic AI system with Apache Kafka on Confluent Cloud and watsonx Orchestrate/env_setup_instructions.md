@@ -101,68 +101,26 @@ In Bob's MCP panel, click **Open Global MCPs** anddd the following configuration
 ```json
 {
   "mcpServers": {
-    "wxo-docs": {
+    "watsonx-orchestrate-adk-docs": {
+      "type": "streamable-http",
+      "url": "https://developer.watson-orchestrate.ibm.com/mcp"
+    },
+    "watsonx-orchestrate-adk": {
       "command": "uvx",
       "args": [
-        "mcp-proxy",
-        "--transport",
-        "streamablehttp",
-        "https://developer.watson-orchestrate.ibm.com/mcp"
-      ],
-      "alwaysAllow": [
-        "SearchIbmWatsonxOrchestrateAdk"
-      ],
-      "disabled": false
-    }
-  }
-}
-```
-
----
-
-### Step 3 — Add the ADK operations server (Project MCP)
-
-In the same MCP Servers panel, click **Open Project MCPs** and add the following configuration. 
-
-**IMPORTANT:** Replace `/path/to/root/of/project` with the absolute path to your workspace folder (e.g., `~/Documents/bob/mcp-wxo`), then save the file:
-
-```json
-{
-  "mcpServers": {
-    "wxo-adk": {
-      "command": "uvx",
-      "args": [
-        "--with",
-        "ibm-watsonx-orchestrate==2.1.0",
-        "ibm-watsonx-orchestrate-mcp-server==2.1.0"
+        "ibm-watsonx-orchestrate-mcp-server"
       ],
       "env": {
-        "WXO_MCP_WORKING_DIRECTORY": "/path/to/root/of/project"
+        "WXO_MCP_WORKING_DIRECTORY": "",
+        "WXO_MCP_DEBUG": ""
       },
-      "alwaysAllow": [
-        "list_agents",
-        "export_agent",
-        "get_tool_template",
-        "list_tools",
-        "list_toolkits",
-        "list_knowledge_bases",
-        "check_knowledge_base_status",
-        "list_connections",
-        "list_voice_configs",
-        "list_models",
-        "check_version"
-      ],
-      "disabled": false
+      "timeout": 300
     }
   }
 }
 ```
 
-> **Note:** The `alwaysAllow` list above pre-approves read-only/inspection tools so Bob doesn't prompt for every query. Write operations (`import_agent`, `create_or_update_agent`, etc.) are intentionally left out so Bob still asks for confirmation before making changes.
-
----
-
-### Step 4 — Confirm both servers are connected
+### Step 3 — Confirm MCP server is connected
 
 After saving both files, go back to the MCP settings view and search for `wxo` — you should see both servers listed as connected.
 
@@ -274,7 +232,7 @@ Instead of running wxO locally, you can use an existing wxO environment and conn
 
 ---
 
-### Step 4 — Copy the service URL and navigate to Access (IAM)
+### Step 3 — Copy the service URL and navigate to Access (IAM)
 
 - **Copy the service URL** from the **Credentials** panel and store it so you can easily access it in the next steps.
 
@@ -287,7 +245,7 @@ Instead of running wxO locally, you can use an existing wxO environment and conn
 
 ---
 
-### Step 5 — Navigate to API keys and click Create
+### Step 4 — Navigate to API keys and click Create
 
 - Select **API keys** from the menu on the left (under the **Manage identities** section).
 
@@ -299,7 +257,7 @@ Instead of running wxO locally, you can use an existing wxO environment and conn
 
 ---
 
-### Step 6 — Name and save your API key
+### Step 5 — Name and save your API key
 
 - Name the API key as you wish (e.g., `wxo-apikey`), keep the default settings and click **Create**.
 
@@ -311,7 +269,7 @@ Instead of running wxO locally, you can use an existing wxO environment and conn
 
 ---
 
-### Step 7 — Add the new environment to your ADK
+### Step 6 — Add the new environment to your ADK
 
 Open a terminal in Bob IDE: **Terminal → New Terminal** (from the IBM Bob main menu bar).
 
@@ -330,7 +288,7 @@ orchestrate env add -n <environment-name> -u <service-instance-url> --type ibm_i
 
 ---
 
-### Step 8 — Activate the environment
+### Step 7 — Activate the environment
 
 Run the following command:
 
