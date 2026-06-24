@@ -93,7 +93,9 @@ Create a Kafka topic using Bob
 
 If you have access to Bob, you can ask Bob to create the topic for you using Python Code. Bob will ask you about your credentials and will proceed in creating the topic for you. For example, this is the instruction in natural language to ask Bob to perform the tasks:
 
-“Hi Bob, create a python code to create a topic on Confluent Cloud called "inventory.transactions", make the number of partitions and retention configurable, and create an .env file and I will fill it with my Confluent Cloud details and credentials. Create "bob/confluent-agents" as my working directory for the project. For this task configure 1 partition and infinte retention (-1ms)”
+```bash
+Hi Bob, create a python code to create a topic on Confluent Cloud called "inventory.transactions", make the number of partitions and retention configurable, and create an .env file and I will fill it with my Confluent Cloud details and credentials. Create "bob/confluent-agents" as my working directory for the project. For this task configure 1 partition and infinte retention (-1ms)
+```
 
 ![Bob creates a Kafka topic](images/Confluent_IMAGE_2.png)
 
@@ -103,13 +105,15 @@ Copy the .env file from *confluent-agents-solution* folder to your Bob's conflue
 
 After you add your credentials, you can ask Bob to create the topic by asking Bob the following: 
 
-“I edited the .env file with my credentials, you can now create the topic on Confluent Kafka, and please validate that it's created successfully.”.
+```bash
+I edited the .env file with my credentials, you can now create the topic on Confluent Kafka, and please validate that it's created successfully.
+```
 
 ![Successful topic creation](images/Confluent_IMAGE_3.png)
 
 ## Step 2. Publish sample message events to the topic
 
-At this point, you have already had two topics:
+At this point, you have already had two topics (pre-created):
 
 - inventory_transactions: Includes all the transactions (positive means additional stock, and negative means sales transaction).
 
@@ -121,7 +125,9 @@ The inventory.transactions topic exists but contains no messages. You need to pu
 
 You can use Python code created with the help of Bob to publish sample events to the topic. You can ask Bob to perform that through this instruction.
 
-“The inventory_transactions topic includes the following fields "sku, branch, quantity, transaction_type". Transaction Type can be either Addition for positive quantity through additional inventory or SALE for negative quantity through sales transaction from pos. Publish 20 sample messages to the topic inventory_transactions with 2 branches "Mall Of Egypt and Dubai Mall" and SKUs 3 laptop brands and 3 mobile brands, through a script. Make one of the laptop 0 quantities (all inventory consumed) in a branch.”
+```bash
+The inventory_transactions topic includes the following fields "sku, branch, quantity, transaction_type". Transaction Type can be either Addition for positive quantity through additional inventory or SALE for negative quantity through sales transaction from pos. Publish 20 sample messages to the topic inventory_transactions with 2 branches "Mall Of Egypt and Dubai Mall" and SKUs 3 laptop brands and 3 mobile brands, through a script. Make one of the laptop 0 quantities (all inventory consumed) in a branch.
+```
 
 ![Publishing Messages with Bob](images/Confluent_IMAGE_10.png)
 
@@ -221,6 +227,9 @@ Only in case of ERROR: Import the MCP server to watsonx Orchestrate with same co
 orchestrate toolkits add --kind mcp --name "sku-availability-checker" --description "Real-time inventory availability checker using Confluent Kafka and ksqlDB" --language python --package-root "/Users/andrealongo/Desktop/git/Confluent_Bob_Lab/confluent-agents" --command "python3 mcp_server.py" --tools "*"
 ```
 
+**
+In case of above solution didn't help, please copy files from confluent-agents-solution folder to your Bob's folder and apply remove failed import, then do a new import.**
+
 4. Open your Watsonx Orchestrate's environment in a browser. Now it's time to create a SKU_Availability_Agent which can leverage the MCP which we just imported to check the availability of products in a specific branch. 
 
 Open watsonx Orchestrate UI, then go to "Manage agents", then click "Create agent", and select "Create from scratch". Give it a name (SKU_Availability_Agent) and a description (e.g., Inventory Management Assistant) and create it. In the agent configuration page, go to the "Toolset" section and select "Add tool". Then select "Local instance" and select the MCP we just imported and click on "Add to agent". Finally, in the "Behavior" section paste the following instructions: 
@@ -264,7 +273,7 @@ Create the Substitute Finder Agent:
 
 The Substitute Finder Agent is defined in a YAML file provided in the Git repository in the "assets" folder.
 
-1. Locate the agent definition file, Substitute_Finder_Agent.yaml
+1. Download the agent definition file and copy it to the Bob's confluent-agents folder, Substitute_Finder_Agent.yaml
 
 2. Import the agent into watsonx Orchestrate using the Agent Development Kit (ADK):
 
@@ -363,7 +372,7 @@ Branch-to-branch searching is intentionally excluded from this tutorial and can 
 
 The Store Associate Agent is defined using a YAML configuration file provided in the repository.
 
-1. Locate the agent definition file, Store_Associate_Agent.yaml, in the "assets" folder of the repository.
+1. Download the agent definition file and copy it to the Bob's confluent-agents folder, Store_Associate_Agent.yaml, in the "assets" folder of the repository.
 
 2. Import the agent using the Agent Development Kit.
 
