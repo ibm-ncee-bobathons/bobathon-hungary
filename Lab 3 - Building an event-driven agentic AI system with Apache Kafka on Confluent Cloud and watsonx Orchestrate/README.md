@@ -125,7 +125,7 @@ You can use Python code created with the help of Bob to publish sample events to
 
 ![Publishing Messages with Bob](images/Confluent_IMAGE_10.png)
 
-## Step 3. Create API keys for Watsonx Orchestrate
+## Step 3. Create API key and service URI for Watsonx Orchestrate
 
 Navigate to IBM Cloud and sign in to your dedicated Watsonx Orchestrate demo environment.
 https://cloud.ibm.com
@@ -134,11 +134,11 @@ https://cloud.ibm.com
 Click on left pane on three lines (Resources menu)
 <img width="1512" height="533" alt="Screenshot 2026-06-24 at 7 06 01" src="https://github.com/user-attachments/assets/c1c616c0-57fb-4cb3-af33-620843430876" />
 
-Find and select your Watsonx Orchestrate service. You need this API key and instance url to deploy an agent to your environment. Please copy and save it to a secure location
+Find and select your Watsonx Orchestrate service. 
 <img width="1512" height="658" alt="Screenshot 2026-06-24 at 7 06 19" src="https://github.com/user-attachments/assets/266d0c12-5e56-49c2-957b-5e8e76d7cbf3" />
 
-Click on blue Launch button
-<img width="1508" height="430" alt="Screenshot 2026-06-24 at 7 06 40" src="https://github.com/user-attachments/assets/776f539b-aa7e-4510-a74f-75f827ca54f4" />
+You need this API key and instance url to deploy your new agent to your Watsonx Orchestrate environment. Please copy and save it to a secure location. Then click on blue Launch button
+<img width="1512" height="706" alt="Screenshot 2026-06-24 at 7 37 14" src="https://github.com/user-attachments/assets/d5c78734-88e9-43cc-87ec-06b67c276bf1" />
 
 You are there. You are going to use this UI for building and testing agents. Keep it open in a browser tab.
 <img width="1512" height="802" alt="Screenshot 2026-06-24 at 7 07 00" src="https://github.com/user-attachments/assets/fa3eb49a-c89e-44b8-bccc-2d2560de499e" />
