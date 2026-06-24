@@ -125,8 +125,6 @@ You can use Python code created with the help of Bob to publish sample events to
 
 ![Publishing Messages with Bob](images/Confluent_IMAGE_10.png)
 
-![SQL Output](images/Confluent_IMAGE_16.png)
-
 ## Step 3. Create API keys for Watsonx Orchestrate
 
 Navigate to IBM Cloud and sign in to your dedicated Watsonx Orchestrate demo environment.
