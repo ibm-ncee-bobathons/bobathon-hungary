@@ -1,0 +1,15 @@
+Based on "draft.txt", create an implementation plan named "plan.md".
+
+Do the first phase based on "plan.md".
+
+Do the second phase based on "plan.md".
+
+Do the third phase based on "plan.md".
+
+Do the fourth phase based on "plan.md".
+
+Do the fifth phase based on "plan.md".
+
+Do the sixth phase based on "plan.md".
+
+Do the seventh phase based on "plan.md".
