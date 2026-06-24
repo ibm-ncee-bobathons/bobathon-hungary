@@ -77,11 +77,9 @@ The following figure shows this architecture:
 
 ### Prerequisites
 
-- This tutorial assumes you have a running local environment of watsonx Orchestrate Agent Development Kit (ADK). Check out the getting started with ADK tutorial (https://developer.ibm.com/tutorials/getting-started-with-watsonx-orchestrate/)if you don’t have an active instance. This tutorial has been tested on watsonx Orchestrate ADK version 2.1.
+- This tutorial assumes you have a running local environment of watsonx Orchestrate Agent Development Kit (ADK). Check out the getting started with ADK tutorial (https://developer.ibm.com/tutorials/getting-started-with-watsonx-orchestrate/)if you don’t have an active instance. This tutorial has been tested on watsonx Orchestrate ADK version 2.11.
 
-- Optionally, access to IBM Bob. Sign up for your free trial. https://bob.ibm.com/trial/?utm_source=developer-content&cm_sp=ibmdev-_-developer-_-trial 
-
-- A Confluent Cloud account with access to Kafka. You can sign up for an account on this product page (https://confluent.cloud/signup).
+- Access to IBM Bob. Sign up for your free trial. https://bob.ibm.com/trial/?utm_source=developer-content&cm_sp=ibmdev-_-developer-_-trial 
 
 - An instance of watsonx Orchestrate (https://www.ibm.com/docs/en/watsonx/watson-orchestrate/base?topic=orchestrate-accessing-trial-version&utm_source=ibm_developer&utm_content=in_content_link&utm_id=tutorials_event-driven-agentic-ai-system-confluent-watsonx-orchestrate&cm_sp=ibmdev-_-developer-tutorials-_-ibmcom).
 
@@ -93,7 +91,7 @@ You can create the Kafka topic using Bob or you can manually create the files.
 
 Create a Kafka topic using Bob
 
-If you have access to Bob, you can optionally ask Bob to create the topic for you using Python Code. Bob will ask you about your credentials and will proceed in creating the topic for you. For example, this is the instruction in natural language to ask Bob to perform the tasks:
+If you have access to Bob, you can ask Bob to create the topic for you using Python Code. Bob will ask you about your credentials and will proceed in creating the topic for you. For example, this is the instruction in natural language to ask Bob to perform the tasks:
 
 “Hi Bob, create a python code to create a topic on Confluent Cloud called "inventory.transactions", make the number of partitions and retention configurable, and create an .env file and I will fill it with my Confluent Cloud details and credentials. Create "bob/confluent-agents" as my working directory for the project. For this task configure 1 partition and infinte retention (-1ms)”
 
@@ -101,139 +99,21 @@ If you have access to Bob, you can optionally ask Bob to create the topic for yo
 
 ### Creating a Kafka topic using Bob
 
-Open the .env file that was created by Bob in the steps above and update the credentials.
+Copy the .env file from *confluent-agents-solution* folder to your Bob's confluent-agents directory that was created by Bob. It contains all relevant credentials to an already configured Confluent Kafka cluster.
 
-After you add your credentials, you can ask Bob to create the topic by asking Bob the following: “Done, I edited the .env file with my credentials, you can now create the topic on Confluent Kafka, and please validate that it's created successfully.”.
+After you add your credentials, you can ask Bob to create the topic by asking Bob the following: 
+
+“I edited the .env file with my credentials, you can now create the topic on Confluent Kafka, and please validate that it's created successfully.”.
 
 ![Successful topic creation](images/Confluent_IMAGE_3.png)
 
-### ALTERNATIVELY: Create a Kafka topic manually in Confluent Cloud
+## Step 2. Publish sample message events to the topic
 
-Alternatively, follow the below steps to do them manually. You will login to Confluent Cloud and create a topic for inventory transactions.
+At this point, you have already had two topics:
 
-1. Log in to Confluent Cloud (https://confluent.cloud/login).
+- inventory_transactions: Includes all the transactions (positive means additional stock, and negative means sales transaction).
 
-2. Click *Environments* in the menu on the left.
-
-3. Select an existing Kafka cluster. If you don’t have an existing cluster, follow the steps in the Confluent documentation (https://docs.confluent.io/cloud/current/clusters/create-cluster.html#create-ak-clusters) to create one.
-
-4. Make a note of the cluster name and environment. These are used later when configuring clients.
-
-5. In the cluster navigation menu, select Topics.
-
-6. Click Add topic.
-
-7. Set the topic name to inventory.transactions.
-
-8. Set Partitions to 1. Using a single partition keeps event ordering deterministic and simplifies event consumption for this tutorial.
-
-9. Leave all other settings with their default values.
-
-10. Click Create with defaults.
-
-![Manually create Kafka topic](images/Confluent_IMAGE_4.png)
-
-11. After creating the topic, Confluent Cloud prompts you to add a data contract. For this tutorial, skip this step by clicking Skip. Using simple JSON messages keeps the focus on event-driven agent behavior rather than schema governance. In production environments, data contracts are recommended to enforce structure and compatibility across producers and consumers.
-
-12. Select the Messages tab.
-
-13. Change the retention to infinite by clicking 1 week next to Retention time, and then clicking Edit settings. Choose Infinite, and then click Save changes.
-
-![Infinite retention](images/Confluent_IMAGE_5.png)
-
-Updating a Kafka topic in Confluent Cloud
-
-## Step 2. Create a derived topic on Confluent Kafka
-
-In this step, you will create a derived topic called inventory.availability that automatically calculates how many units of each product are available at each branch by processing the transactions from the first topic.
-
-You will create a ksqlDB cluster that will process your streaming data. A ksqlDB cluster is a processing engine that runs continuously in the background to read data from Kafka topics, perform calculations, and write results back to other topics using SQL-like commands.
-
-### Create a derived topic using Bob
-
-You can ask Bob to create this derived topic for you by asking Bob the following:
-
-“The inventory.transactions topic includes the following fields "sku, branch, quantity, transaction_type". Transaction Type can be either Addition for positive quantity through additional inventory or SALE for negative quantity through sales transaction from pos. Create a ksqlDB cluster through Confluent CLI, then read the transactions and calculates the availability through inventory_availability table with "sku, branch, and available_quantity (sum of the quantities)" fields and JSON format”
-
-![Bob creates a derived topic](images/Confluent_IMAGE_6.png)
-
-### ALTERNATIVELY: Create a derived topic manually
-
-Alternatively, you can follow the below manual steps. Create a ksqlDB cluster that that will continuously read transactions and calculate availability.
-
-1. Install Confluent CLI if not installed already using this guide (https://docs.confluent.io/confluent-cli/current/install.html).
-
-2. Login to Confluent using your credentials and get your user ID.
-
-```bash
-confluent login --save
-confluent iam user list
-```
-
-3. Create the ksqlDB cluster, and replace the cluster ID with your Kafka cluster ID that you retrieved earlier, and the identity with your user ID that you retrieved in the previous step.
-
-```bash
-confluent ksql cluster create sku-availability-calculator --cluster <YOUR_KAFKA_CLUSTER_ID> --credential-identity <YOUR_USER_ID>
-```
-
-4. It takes a few minutes for the ksqlDB cluster to be provisioned, check the status using the cluster ID on the creation message. It should show status “Provisioned.”
-
-```bash
-confluent ksql cluster describe <YOUR_KSQL_CLUSTER_ID>
-```
-
-![ksql-cluster-creation](images/Confluent_IMAGE_7.png)
-
-5. Create a stream from the inventory.transactions topic. Refresh the Confluent UI, and then from the left menu, click ksqlDB and your cluster “sku-availability-calculator.” In the Editor tab, copy the following code to create a stream that only reads 3 fields: SKU, branch, and quantity from the topic.
-
-```sql
-CREATE STREAM inventory_transactions (
-sku VARCHAR,
-branch VARCHAR,
-quantity INT
-) WITH (
-KAFKA_TOPIC='inventory.transactions',
-KEY_FORMAT='KAFKA',
-VALUE_FORMAT='JSON'
-);
-```
-
-Then, click Run query.
-
-![Query on ksqlDB](images/Confluent_IMAGE_8.png)
-
-6. Now create an inventory_availability table that automatically calculates the available quantity by grouping transactions by SKU and branch using the following SQL statement, and then click Run query. This performs the following:
-
-- Groups all transactions by SKU and branch.
-- Sums up quantities (positive for inventory adds, negative for sales)
-- Writes results to inventory.availability topic
-- Updates automatically when new transactions arrive
-
-```sql
-CREATE TABLE inventory_availability WITH (
-KAFKA_TOPIC='inventory.availability',
-KEY_FORMAT='JSON',
-VALUE_FORMAT='JSON',
-PARTITIONS=1
-) AS
-SELECT 
-sku,
-branch,
-SUM(quantity) AS available_quantity
-FROM inventory_transactions
-GROUP BY sku, branch
-EMIT CHANGES;
-```
-
-![Inventory Availability Table](images/Confluent_IMAGE_8.png)
-
-## Step 3. Publish sample message events to the topic
-
-At this point, you have created two topics:
-
-- inventory.transactions: Includes all the transactions (positive means additional stock, and negative means sales transaction).
-
-- inventory.availability: This a derived topic that you created in the previous step to automatically calculate the availability.
+- inventory_availability: This a derived topic that you created in the previous step to automatically calculate the availability.
 
 The inventory.transactions topic exists but contains no messages. You need to publish sample messages to the topic.
 
@@ -241,65 +121,58 @@ The inventory.transactions topic exists but contains no messages. You need to pu
 
 You can use Python code created with the help of Bob to publish sample events to the topic. You can ask Bob to perform that through this instruction.
 
-“Publish 20 sample messages to the topic inventory.transaction with 2 branches "Mall Of Egypt and Dubai Mall" and SKUs 3 laptop brands and 3 mobile brands, through a script. Make one of the laptop 0 quantities (all inventory consumed) in a branch. Then validate that the messages are correctly processed on ksqlDB.”
+“The inventory_transactions topic includes the following fields "sku, branch, quantity, transaction_type". Transaction Type can be either Addition for positive quantity through additional inventory or SALE for negative quantity through sales transaction from pos. Publish 20 sample messages to the topic inventory_transactions with 2 branches "Mall Of Egypt and Dubai Mall" and SKUs 3 laptop brands and 3 mobile brands, through a script. Make one of the laptop 0 quantities (all inventory consumed) in a branch.”
 
 ![Publishing Messages with Bob](images/Confluent_IMAGE_10.png)
 
-### Publishing sample messages manually
-
-Alternatively, you can follow these steps to manually publish these messages:
-
-1. Create an API Key by clicking the hamburger menu, and then click API keys.
-
-![Confluent menu](images/Confluent_IMAGE_11.png)
-
-2. Click Add API key, and then click Next. Specify your environment and cluster, and then click Next.
-
-3. Click Create API key and store your API key and secret securely.
-
-![Confluent API Key](images/Confluent_IMAGE_12.png)
-
-4. Similarly, create an API Key for your ksqlDB cluster and save the details.
-
-5. On the left menu, click Cluster Settings and then copy these details (Cluster ID and bootstrap server).
-
-![Confluent Cluster Setting](images/Confluent_IMAGE_13.png)
-
-7. Create an .env file and use the .env.example file as a template. Fill the details of your BOOTSTRAP_SERVER, API_KEY, and API_SECRET that you retrieved in the previous step.
-
-8. Review the sample messages file (sample-transactions.json). The file contains 20 inventory transactions across 6 different product SKUs distributed between two retail branches: Dubai Mall and Mall of Egypt. Each transaction represents either an inventory addition (positive quantity) when new stock arrives from suppliers or a sale (negative quantity) when customers purchase products through a POS.
-
-9. Run the python file to produce the Kafka messages in the topic.
-
-```bash
-python3.13 -m venv .venv
-uv pip install -r requirements.txt
-python produce_messages.py
-```
-
-![Publishing sample messages in Confluent Kafka](images/Confluent_IMAGE_14.png)
-
-10. Validate that the messages are inserted on Confluent UI. You should see the message count as 20 for the inventory.transaction topic.
-
-![Confluent UI showing messages](images/Confluent_IMAGE_15.png)
-
-11. Click ksqlDB and run the following select statement and make offset “Earliest” by choosing “Earlist” in the drop-down next to “auto.offset.reset”. You will run this statement from the MCP tool in the next step. It calculates the availability of SKUs quantities by aggregating inventory (positive) and purchases (negative) per each SKU and branch.
-
-```bash
-SELECT * FROM INVENTORY_AVAILABILITY EMIT CHANGES;
-```
-
 ![SQL Output](images/Confluent_IMAGE_16.png)
+
+## Step 3. Create API keys for Watsonx Orchestrate
+
+Navigate to IBM Cloud and sign in to your dedicated Watsonx Orchestrate demo environment.
+https://cloud.ibm.com
+<img width="1" height="2" alt="Screenshot 2026-06-24 at 7 05 52" src="https://github.com/user-attachments/assets/d412ee8c-714c-454f-b4c8-a67c48061b63" />
+
+Click on left pane on three lines (Resources menu)
+<img width="1512" height="533" alt="Screenshot 2026-06-24 at 7 06 01" src="https://github.com/user-attachments/assets/c1c616c0-57fb-4cb3-af33-620843430876" />
+
+Find and select your Watsonx Orchestrate service. You need this API key and instance url to deploy an agent to your environment. Please copy and save it to a secure location
+<img width="1512" height="658" alt="Screenshot 2026-06-24 at 7 06 19" src="https://github.com/user-attachments/assets/266d0c12-5e56-49c2-957b-5e8e76d7cbf3" />
+
+Click on blue Launch button
+<img width="1508" height="430" alt="Screenshot 2026-06-24 at 7 06 40" src="https://github.com/user-attachments/assets/776f539b-aa7e-4510-a74f-75f827ca54f4" />
+
+You are there. You are going to use this UI for building and testing agents. Keep it open in a browser tab.
+<img width="1512" height="802" alt="Screenshot 2026-06-24 at 7 07 00" src="https://github.com/user-attachments/assets/fa3eb49a-c89e-44b8-bccc-2d2560de499e" />
 
 ## Step 4. Create the MCP tool and AI Agent in watsonx Orchestrate
 
 In this step, you create the MCP tool and AI agent in watsonx Orchestrate. The MCP tool and AI agent configurations were created and validated with the help of IBM Bob.
 
-Update the .env file with your ksqlDB cluster details as your MCP tool is going to communicate with the newly created through ksqlDB.
-
 Prompt Bob in the Code mode with the following: 
+
 ```bash
-Create an MCP Server using the FastMCP framework. The MCP function is to query the current inventory (stored in a ksqlDB in Confluent Cloud). Make sure to include the ksqlDB connection details in the .env file. Once that is done, start the MCP server and build some unit test to validate the MCP function. When executing tests, mnake sure to utlize the venv in the project (as it has the required packages already installed).
+Create an MCP Server using the FastMCP framework. The MCP function is to query 
+the current inventory (stored in a ksqlDB table in Confluent Cloud).
+
+Requirements:
+1. Use ksqlDB connection details from .env file
+2. Implement ROBUST response parsing that handles multiple ksqlDB response formats:
+   - Streaming format: {"row": {"columns": [...]}}
+   - Direct format: {"sku": ..., "branch": ..., "available_quantity": ...}
+   - Error responses: {"error_code": ..., "message": ...}
+3. Use a multi-strategy parsing approach:
+   - First try to parse response as JSON
+   - If that fails, fall back to line-by-line text parsing
+   - Include regex-based extraction as final fallback
+4. The parsing logic should match the proven approach:
+   - _extract_json_objects() function
+   - parse_query_output() for text-based streaming
+   - parse_ksqldb_response() for JSON responses
+   - execute_ksqldb_query() that tries JSON first, then text parsing
+5. Create comprehensive unit tests (30+ tests)
+6. Use existing venv (../../.venv)
+7. Name the file mcp_server.py
 ```
 
 To import the MCP tool into watsonx Orchestrate, follow these steps: 
@@ -309,11 +182,19 @@ To import the MCP tool into watsonx Orchestrate, follow these steps:
 ```bash
 orchestrate env add -n <YOUR_ENVIRONMENT_NAME_OF_CHOICE> -u <YOUR_INSTANCE_URL>
 ```
+Example:
+```bash
+orchestrate env add -n WXOADK -u https://api.au-syd.watson-orchestrate.cloud.ibm.com/instances/71d3279d-52fb-4c48-9eff-c1190632fa45
+```
 
-2. Create an API Key for your environment. Go to https://cloud.ibm.com and select the "Manage" drop-down menu, then click on "Access (IAM)" and then "API keys". Click on "Create" and copy or save the API key in a safe place as it would disappear forever once you close the window displaying it. Then activate your Orchestrate environment by providing your API key just created as follows: 
+2. Substitute your API key from step 3 and activate your Orchestrate environment by providing your API key just created as follows: 
 
 ```bash
-orchestrate env activate <YOUR_ENVIRONMENT_NAME_PREVIOUSLY_SELECTED>
+orchestrate env activate <YOUR_ENVIRONMENT_NAME_PREVIOUSLY_SELECTED> --api-key
+```
+Example:
+```bash
+orchestrate env activate WXOADK --api-key qmLPOTKMjLtlMnv07N4L_p7ACG96lfwzKJ-RT-FrgDm
 ```
 
 You will be prompted to enter the API key, so provide it and activate the environment.
@@ -323,12 +204,27 @@ You will be prompted to enter the API key, so provide it and activate the enviro
 In the following command, replace /Users/andrealongo/Desktop/git/Confluent_Bob_Lab/confluent-agents with the absolute path of your project.
 
 ```bash
-orchestrate toolkits add --kind mcp --name "sku-availability-checker" --description "Real-time inventory availability checker using Confluent Kafka and ksqlDB" --language python --package-root "/Users/andrealongo/Desktop/git/Confluent_Bob_Lab/confluent-agents" --command "python3 get_sku_availability.py" --tools "*"
+orchestrate toolkits add --kind mcp --name "sku-availability-checker" --description "Real-time inventory availability checker using Confluent Kafka and ksqlDB" --language python --package-root "/Users/andrealongo/Desktop/git/Confluent_Bob_Lab/confluent-agents" --command "python3 mcp_server.py" --tools "*"
 ```
 
 ![Import MCP](images/Confluent_IMAGE_17.png)
 
-Now it's time to create a SKU_Availability_Agent which can leverage the MCP which we just imported to check the availability of products in a specific branch. 
+**
+In case of an ERROR like you see below, please copy the whole output to Bob. There might be a small issue like requirements.txt missing. Bob is trying to fix it for you.
+<img width="1512" height="890" alt="Screenshot 2026-06-24 at 7 13 04" src="https://github.com/user-attachments/assets/b919c41e-d4e2-4fea-995e-b5061f08bc7f" />
+
+Remove failed import 
+```bash
+orchestrate toolkits remove --name "sku-availability-checker"
+```
+
+Import the MCP server to watsonx Orchestrate with same command like before (don't forget to change path)
+```bash
+orchestrate toolkits add --kind mcp --name "sku-availability-checker" --description "Real-time inventory availability checker using Confluent Kafka and ksqlDB" --language python --package-root "/Users/andrealongo/Desktop/git/Confluent_Bob_Lab/confluent-agents" --command "python3 mcp_server.py" --tools "*"
+```
+**
+
+4. Open your Watsonx Orchestrate's environment in a browser. Now it's time to create a SKU_Availability_Agent which can leverage the MCP which we just imported to check the availability of products in a specific branch. 
 
 Open watsonx Orchestrate UI, then go to "Manage agents", then click "Create agent", and select "Create from scratch". Give it a name (SKU_Availability_Agent) and a description (e.g., Inventory Management Assistant) and create it. In the agent configuration page, go to the "Toolset" section and select "Add tool". Then select "Local instance" and select the MCP we just imported and click on "Add to agent". Finally, in the "Behavior" section paste the following instructions: 
 
@@ -350,10 +246,10 @@ When users ask about inventory or stock availability:
 Test the agent with the following question:
 
 ```bash
-What are the available SKUs in Mall of Egypt?
+What are the available SKUs in Mall Of Egypt?
 ```
 
-## Step 5. Create the agentic RAG agent in watsonx Orchestrate
+## Step 6. Create the agentic RAG agent in watsonx Orchestrate
 
 In this step, you create the Substitute Finder Agent, which is responsible for suggesting suitable product alternatives when a requested SKU is not available in a specific branch. Unlike the SKU Availability Agent, which relies on real-time Kafka state, this agent reasons over enterprise product documents using agentic RAG.
 
@@ -420,19 +316,22 @@ Test the agent in isolation before integrating it with the supervisor agent in t
 
 Prompt 1 – Grounding test
 
+```bash
 From the enterprise product catalog, retrieve the entry for SKU LAPTOP-DELL-XPS-15 and list its key attributes.
-
+```
 Expected result: The agent retrieves the catalog entry and lists the attributes defined in the document, without asking follow-up or confirmation questions.
 
 Prompt 2 – Similarity test
 
+```bash
 LAPTOP-DELL-XPS-15 is not available. Suggest a similar laptop using the product catalog.
+```
 
 Expected result: The agent recommends HP-SPECTRE-X360 and explains the recommendation using shared attributes from the catalog.
 
 ![Testing agent](images/Confluent_IMAGE_19.png)
 
-## Step 6. Create the supervisor agent on watsonx Orchestrate
+## Step 7. Create the supervisor agent on watsonx Orchestrate
 
 In this step, you create a Store Associate Agent that acts as a supervisor agent. Its role is to coordinate the previously created agents and provide a single, customer-facing interaction point for store associates.
 
@@ -484,11 +383,15 @@ In the Pre-deployment summary window, click Deploy again.
 
 Test A (Out of stock + substitutes)
 
+```bash
 Do you have LAPTOP-DELL-XPS-15 in Mall Of Egypt?
+```
 
 Test B (In stock example)
 
-Do you have LAPTOP-MACBOOK-PRO-16 in Mall Of Egypt?
+```bash
+Do you have MOBILE-IPHONE-15PRO in Mall Of Egypt?
+```
 
 ![TESTING FINAL](images/Confluent_IMAGE_20.png)
 
