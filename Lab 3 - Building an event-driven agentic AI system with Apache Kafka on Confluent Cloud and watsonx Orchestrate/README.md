@@ -250,13 +250,14 @@ When users ask about inventory or stock availability:
 ```
 
 Test the agent with one of the following questions:
+```bash
+Do you have LAPTOP-DELL-XPS-15 in Mall Of Egypt?
+```
 
 ```bash
 What are the available SKUs in Mall Of Egypt?
 ```
-```bash
-Do you have LAPTOP-DELL-XPS-15 in Mall Of Egypt?
-```
+
 
 ## Step 6. Create the agentic RAG agent in watsonx Orchestrate
 
