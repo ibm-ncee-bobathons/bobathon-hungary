@@ -249,10 +249,13 @@ When users ask about inventory or stock availability:
 4. If asked about a specific SKU or branch, filter the results accordingly
 ```
 
-Test the agent with the following question:
+Test the agent with one of the following questions:
 
 ```bash
 What are the available SKUs in Mall Of Egypt?
+```
+```bash
+Do you have LAPTOP-DELL-XPS-15 in Mall Of Egypt?
 ```
 
 ## Step 6. Create the agentic RAG agent in watsonx Orchestrate
